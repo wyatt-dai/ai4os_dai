@@ -28,7 +28,22 @@ ch1中的start函数与链接脚本的配合就是对上述流程的最简化，
 
 二、特权级与 SBI：从“直接依赖”到成熟系统的“分层抽象”
 ch1中的做法：
-rustsbi相当于上面所属的bios的作用，作为一个初始启动的固件，并为程序运行提供一些基础库，程序运行在 S-mode，相当于实模式的运行，可以直接执行特权指令，所有“硬件相关能力”通过 SBI 转交给 M-mode，形成了
+这里的理解引用我在rcore-tutorial看到的一段话，我本来理解把sbi比作bios,是错误的，其在bios后，在bootloader前：
+```
+SBI 是 RISC-V Supervisor Binary Interface 规范的缩写，OpenSBI 是RISC-V官方用C语言开发的SBI参考实现；RustSBI 是用Rust语言实现的SBI。
+
+BIOS 是 Basic Input/Output System，作用是引导计算机系统的启动以及硬件测试，并向OS提供硬件抽象层。
+
+机器上电之后，会从ROM中读取引导代码，引导整个计算机软硬件系统的启动。而整个启动过程是分为多个阶段的，现行通用的多阶段引导模型为：
+
+ROM -> LOADER -> RUNTIME -> BOOTLOADER -> OS
+
+Loader 要干的事情，就是内存初始化，以及加载 Runtime 和 BootLoader 程序。而Loader自己也是一段程序，常见的Loader就包括 BIOS 和 UEFI，后者是前者的继任者。
+
+Runtime 固件程序是为了提供运行时服务（runtime services），它是对硬件最基础的抽象，对OS提供服务，当我们要在同一套硬件系统中运行不同的操作系统，或者做硬件级别的虚拟化时，就离不开Runtime服务的支持。SBI就是RISC-V架构的Runtime规范。
+
+BootLoader 要干的事情包括文件系统引导、网卡引导、操作系统启动配置项设置、操作系统加载等等。常见的 BootLoader 包括GRUB，U-Boot，LinuxBoot等。
+```
 内核 → 固件 → 硬件
 即现阶段证明“内核可以运行”，后续补充中进行更复杂的特权级切换实现，产生内核态和用户态的区分
 
@@ -44,7 +59,7 @@ panic 直接触发关机
 - 定制段：回顾一下编译原理的内容，编译器/链接器生成的是：ELF 文件，里面有：.text .rodata .data .bss等各个段，但ELF 里描述的是：“我有这些段”而不是：“它们一定在内存的哪个地址”，os会进行指定，裸机没有os,所以需要直接固定位置，该脚本就是直接放在了0x8020_0000后连续存储。
 
 
-八、学习意义上的结论
+五、学习意义上的结论
 
 从裸机实现出发学习操作系统的意义在于：
 - 可以观察到：
